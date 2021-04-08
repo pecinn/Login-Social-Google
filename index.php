@@ -12,24 +12,46 @@ if(empty($_SESSION["user"])){
      */
 
      $google = new \League\OAuth2\Client\Provider\Google(GOOGLE);
-     $error = filter_input(INPUT_GET, 'error', )
+     $error = filter_input(INPUT_GET, 'error', FILTER_SANITIZE_STRING );
+     $code = filter_input(INPUT_GET, 'code', FILTER_SANITIZE_STRING );
 
-     if(!isset($_GET['code'])){
-        $token = $google->getAccessToken('authorization_code', [
-            'code' => $_GET['code']
-        ]);
-        $_SESSION["userLogin"] = $google->getResourceOwner($token);
-        header("Location: ". GOOGLE["redirectUri"]);
-        die;
-    }
+     $authUrl = $google->getAuthorizationUrl();
 
-      if(!isset($_GET['error'])){
+    if($error){
         echo "<h3>Voce precisa autorizar para continuar!</h3>";
     }
+    
+    if($code) {
+        $token = $google->getAccessToken('authorization_code', [
+            "code" => $code
+        ]);
+        
+        $_SESSION["user"] = serialize($google->getResourceOwner($token));
+
+        header("Location: ".GOOGLE["redirectUri"]);
+        exit;
+    }
+
+    echo "<a title='Logar como Google' href='{$authUrl}'>Google Login</a>";
+
+    
+
+  
 
 } else {
     echo "<h1>user</h1>";
-    var_dump($_SESSION["user"]);
+   
+    $user = unserialize($_SESSION["user"]);
+
+    echo "<img src='{$user->getAvatar()}' alt='' title=''><h1>Bem vindo (a) {$user->getFirstName()} </h1>";
+
+    echo "</br>";
+    echo "<a title='Sair' href='?off=true'>Sair</a>";
+        $off = filter_input(INPUT_GET, "off", FILTER_VALIDATE_BOOLEAN);
+        if($off){
+            unset($_SESSION["user"]);
+            header("Refresh: 0");
+        }
 }
 
 ob_end_flush();
